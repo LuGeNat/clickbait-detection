@@ -13,14 +13,9 @@ class ClickbaitDataset(object):
             with open(instances_path, "r") as inf:
                 _instances = [json.loads(x) for x in inf.readlines()]
             for i in _instances:
-                self.dataset_dict[i['id']] = {'postTimestamp': i['postTimestamp'],
-                                              'postText': i['postText'],
-                                              'postMedia': i['postMedia'],
-                                              'targetTitle': i['targetTitle'],
-                                              'targetDescription': i['targetDescription'],
-                                              'targetKeywords': i['targetKeywords'],
-                                              'targetParagraphs': i['targetParagraphs'],
-                                              'targetCaptions': i['targetCaptions']}
+                if i['text'] is not []:
+                    self.dataset_dict[i['id']] = {'text': i['text'],
+                                                  'id': i['id']}
 
     def from_file(self, instances_path, truth_path):
         with open(instances_path, "r") as inf:
@@ -29,50 +24,45 @@ class ClickbaitDataset(object):
             _truth = [json.loads(x) for x in inf.readlines()]
 
         for i in _instances:
-            self.dataset_dict[i['id']] = {'postTimestamp': i['postTimestamp'],
-                                          'postText': i['postText'],
-                                          'postMedia': i['postMedia'],
-                                          'targetTitle': i['targetTitle'],
-                                          'targetDescription': i['targetDescription'],
-                                          'targetKeywords': i['targetKeywords'],
-                                          'targetParagraphs': i['targetParagraphs'],
-                                          'targetCaptions': i['targetCaptions']}
+            if i['text'] is not []:
+                self.dataset_dict[i['id']] = {'text': i['text']}
+            else:
+                pass
 
         for t in _truth:
-            self.dataset_dict[t['id']]['truthMean'] = t['truthMean']
-            self.dataset_dict[t['id']]['truthClass'] = t['truthClass']
+            if t['id'] in self.dataset_dict.keys():
+                if t['gender'] == 'male':
+                    self.dataset_dict[t['id']]['trueGender'] = 0
+                elif t['gender'] == 'female':
+                    self.dataset_dict[t['id']]['trueGender'] = 1
+                else:
+                    self.dataset_dict[t['id']]['trueGender'] = 2
 
         # self.id_index = {index: key for index, key in enumerate(self.dataset_dict.keys())}
 
-    def add_tweet(self, tweet_id, post_timestamp='', post_text=[], post_media=[], target_title='',
-                  target_description='', target_keywords='', target_paragraphs=[], target_captions=[]):
-        self.dataset_dict[tweet_id] = {'postTimestamp': [post_timestamp],
-                                       'postText': post_text,
-                                       'postMedia': post_media,
-                                       'targetTitle': target_title,
-                                       'targetDescription': target_description,
-                                       'targetKeywords': target_keywords,
-                                       'targetParagraphs': target_paragraphs,
-                                       'targetCaptions': target_captions,
-                                       'truthMean': None,
-                                       'truthClass': None}
+    def add_feed(self, feet_id, text=''):
+        self.dataset_dict[feet_id] = {'text': text,
+                                       'id': feet_id}
         return self
 
     def get_y(self):
-        return np.asarray([self.dataset_dict[key]['truthMean'] for key in sorted(self.dataset_dict.keys())])
+        return np.asarray([self.dataset_dict[key]['trueGender'] for key in sorted(self.dataset_dict.keys())])
 
     def get_y_class(self):
-        class_list = [self.dataset_dict[key]['truthClass'] for key in sorted(self.dataset_dict.keys())]
-        return np.asarray([0 if t == "no-clickbait" else 1 for t in class_list])
+        class_list = [self.dataset_dict[key]['trueGender'] for key in sorted(self.dataset_dict.keys())]
+        return np.asarray([0 if t == 'male' or t == 'female' else 1 for t in class_list])
 
     def get_x(self, field_name):
-        # TODO dont just use the first element in the text
         _result = []
         for key in sorted(self.dataset_dict.keys()):
             _result.append(''.join(self.dataset_dict[key][field_name]))
         return _result
-        '''return np.asarray([self.dataset_dict[key][field_name][0]
-                           for key in sorted(self.dataset_dict.keys())])'''
+
+    def get_x_annotated(self):
+        _result = []
+        for value in self.dataset_dict.values():
+            _result.append(value)
+        return _result
 
     def size(self):
         return len(self.dataset_dict.keys())
