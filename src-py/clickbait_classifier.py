@@ -19,14 +19,14 @@ import os
 def build_new_features(cbd):
     # get list of scores and a list of the postTexts
     # common_phrases = ft.ContainsWordsFeature("wordlists/TerrierStopWordList.txt", ratio=True)
-    char_3grams = ft.NGramFeature(TfidfVectorizer, o=3, analyzer='char', fit_data=cbd.get_x('text'), cutoff=3)
-    word_3grams = ft.NGramFeature(TfidfVectorizer, o=3, fit_data=cbd.get_x('text'), cutoff=3)
-    stop_word_count = ContainsWordsFeature(data, wordlist, only_words=True, ratio=False)
+    char_ngrams = ft.NGramFeature(TfidfVectorizer, n=2, o=4, analyzer='char', fit_data=cbd.get_x('text'), cutoff=3)
+    word_ngrams = ft.NGramFeature(TfidfVectorizer, o=3, fit_data=cbd.get_x('text'), cutoff=3)
+    # stop_word_count = ContainsWordsFeature(data, wordlist, only_words=True, ratio=False)
     #
-    stop_word_ratio = ft.ContainsWordsFeature("wordlists/TerrierStopWordList.txt", ratio=True)
-    easy_words_ratio = ft.ContainsWordsFeature("wordlists/DaleChallEasyWordList.txt", ratio=True)
-    # mentions_count = ft.ContainsWordsFeature(['@'], only_words=False)
-    # hashtags_count = ft.ContainsWordsFeature(['#'], only_words=False)
+    # stop_word_ratio = ft.ContainsWordsFeature("wordlists/TerrierStopWordList.txt", ratio=True)
+    # easy_words_ratio = ft.ContainsWordsFeature("wordlists/DaleChallEasyWordList.txt", ratio=True)
+    mentions_count = ft.ContainsWordsFeature(['[mention]'], only_words=False)
+    hashtags_count = ft.ContainsWordsFeature(['[link]'], only_words=False)
     # clickbait_phrases_count = ft.ContainsWordsFeature("wordlists/DownworthyCommonClickbaitPhrases.txt",
     #                                                   only_words=False)
     # flesch_kincait_score = ft.FleschKincaidScore()
@@ -40,10 +40,10 @@ def build_new_features(cbd):
     # part_of_day = ft.PartOfDay()
     # sentiment_polarity = ft.SentimentPolarity()
 
-    f_builder = FeatureBuilder((char_3grams, 'text'),
-                               (word_3grams, 'text'),
-                               # (hashtags_count, 'postText'),
-                               # (mentions_count, 'postText'),
+    f_builder = FeatureBuilder((char_ngrams, 'text'),
+                               (word_ngrams, 'text'))
+                               # (hashtags_count, 'text'),
+                               # (mentions_count, 'text'))
                                # (sentiment_polarity, 'postText'),
                                # (flesch_kincait_score, 'postText'),
                                # (has_abbrev, 'postText'),
@@ -54,14 +54,19 @@ def build_new_features(cbd):
                                # (char_sum, 'postText'),
                                # (has_media_attached, 'postMedia'),
                                # (part_of_day, 'postTimestamp'),
-                               (easy_words_ratio, 'postText'),
-                               (stop_word_ratio, 'postText'))
+                               # (easy_words_ratio, 'postText'),
+                               # (stop_word_ratio, 'postText'),
                                # (clickbait_phrases_count, 'postText'))
 
 #    for file_name in os.listdir("wordlists/general-inquirer"):
 #        f = ft.ContainsWordsFeature("wordlists/general-inquirer/" + file_name)
 #        f_builder.add_feature(feature=f, data_field_name='text')
 
+
+    print("hashtags_count")
+    print(hashtags_count)
+    print("mentions_count")
+    print(mentions_count)
     # char_3grams_mc = ft.NGramFeature(TfidfVectorizer, o=3, analyzer='char', fit_data=cbd.get_x('targetParagraphs'), cutoff=3)
     # word_3grams_mc = ft.NGramFeature(TfidfVectorizer, o=3, fit_data=cbd.get_x('targetParagraphs'), cutoff=3)
 
@@ -72,12 +77,12 @@ def build_new_features(cbd):
 
     print('building')
     f_builder.build(cbd)
-    # pickle.dump(obj=f_builder, file=open("feature_builder_w_13_c13_copmlete_co3.pkl", "wb"))
+    pickle.dump(obj=f_builder, file=open("feature_builder_w_13_c13_copmlete_co3.pkl", "wb"))
     return f_builder
 
 
-cbd = ClickbaitDataset("../data/sample_3.ndjson",
-                       "../data/labels.ndjson")
+cbd = ClickbaitDataset("../data/sample_all_nb_2.ndjson",
+                       "../data/labels_all_nb.ndjson")
 f_builder = build_new_features(cbd)
 # f_builder = pickle.load(open("feature_builder_w_13_c13_copmlete_co3.pkl", "rb"))
 x = f_builder.build_features
@@ -88,7 +93,7 @@ print('training')
 cbm = ClickbaitModel()
 ev_function = cbm.eval_regress
 # cbm.regress(x, y, Ridge(alpha=3.5), evaluate=True)
-cbm.classify(x, y, LogisticRegression(), evaluate=False, cross_val=False, confusion=True)
+cbm.classify(x, y, LogisticRegression(), evaluate=False, cross_val=True, confusion=True)
 cbm.save("model_trained.pkl")
 # cbm.load("model_trained.pkl")
 # y_predict = cbm.predict(x2)

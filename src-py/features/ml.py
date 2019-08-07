@@ -16,6 +16,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import cross_val_predict
 import scipy.sparse
 import time
+from datetime import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -109,6 +110,7 @@ class ClickbaitModel(object):
             conf_mat = confusion_matrix(y_train, scores)
             print(conf_mat)
             self.plot_confusion_matrix(y_train, scores, names, normalize=False, title=None, cmap=plt.cm.Blues)
+            np.set_printoptions(precision=2)
             plt.show()
 
     def regress(self, x, y, model, evaluate=True, cross_val=False):
@@ -161,16 +163,20 @@ class ClickbaitModel(object):
         This function prints and plots the confusion matrix.
         Normalization can be applied by setting `normalize=True`.
         """
+        timestamp = time.time()
+        dt_object = datetime.fromtimestamp(timestamp)git
+
         if not title:
             if normalize:
-                title = 'Normalized confusion matrix'
+                title = 'Normalized confusion matrix'  + str(dt_object)
             else:
-                title = 'Confusion matrix, without normalization'
+                title = 'Confusion matrix, without normalization' + str(dt_object)
 
         # Compute confusion matrix
         cm = confusion_matrix(y_true, y_pred)
         # Only use the labels that appear in the data
         classes = classes[unique_labels(y_true, y_pred)]
+
         if normalize:
             cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
             print("Normalized confusion matrix")
