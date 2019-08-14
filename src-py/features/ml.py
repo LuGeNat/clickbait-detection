@@ -6,6 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import ElasticNet
+from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import SGDRegressor
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
@@ -25,6 +26,7 @@ from sklearn import svm, datasets
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from sklearn.utils.multiclass import unique_labels
+from sklearn.metrics import classification_report
 
 
 def normalized_mean_squared_error(truth, predictions):
@@ -43,7 +45,8 @@ class ClickbaitModel(object):
     __classification_measures = {'Accuracy': skm.accuracy_score,
                                  'Precision': skm.precision_score,
                                  'Recall': skm.recall_score,
-                                 'F1 score': skm.f1_score}
+                                 'F1 score': skm.f1_score,
+                                 }
 
     def __init__(self):
         self.models = {"LogisticRegression": LogisticRegression(),
@@ -55,15 +58,16 @@ class ClickbaitModel(object):
                        "Lasso": Lasso(),
                        "ElasticNet": ElasticNet(),
                        "SGDRegressor": SGDRegressor(),
-                       "RandomForestRegressor": RandomForestRegressor()}
+                       "RandomForestRegressor": RandomForestRegressor(),
+                       "Dummy": DummyClassifier(strategy='stratified', random_state=0)}
         self.model_trained = None
 
-    def classify(self, x, y, model, evaluate=True, cross_val=False, confusion=False):
+    def classify(self, x, y, model, evaluate=True, cross_val=False, confusion=False, report=False):
         if isinstance(model, str):
             self.model_trained = self.models[model]
         else:
             self.model_trained = model
-        if evaluate:
+        if evaluate or report:
             x_train, x_test, y_train, y_test = train_test_split(x, y.T, random_state=42)
         else:
             x_train = x
@@ -105,13 +109,21 @@ class ClickbaitModel(object):
             print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 
         if confusion:
-            names = np.asanyarray(['male', 'female', 'non-binary'])
+            names = np.asanyarray([
+                'male',
+                'female',
+                'non-binary'])
             scores = cross_val_predict(self.model_trained, x, y, cv=10)
             conf_mat = confusion_matrix(y_train, scores)
             print(conf_mat)
-            self.plot_confusion_matrix(y_train, scores, names, normalize=False, title=None, cmap=plt.cm.Blues)
-            np.set_printoptions(precision=2)
-            plt.show()
+            #self.plot_confusion_matrix(y_train, scores, names, normalize=False, title=None, cmap=plt.cm.Blues)
+            #np.set_printoptions(precision=2)
+            #plt.show()
+
+        if report:
+            names = ['male', 'female', 'non-binary']
+            predicted = self.model_trained.predict(x_test)
+            print(classification_report(y_test, predicted, target_names=names))
 
     def regress(self, x, y, model, evaluate=True, cross_val=False):
         if isinstance(model, str):
@@ -164,7 +176,7 @@ class ClickbaitModel(object):
         Normalization can be applied by setting `normalize=True`.
         """
         timestamp = time.time()
-        dt_object = datetime.fromtimestamp(timestamp)git
+        dt_object = datetime.fromtimestamp(timestamp)
 
         if not title:
             if normalize:
